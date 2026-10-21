@@ -1,0 +1,36 @@
+name: Build apps
+on: [workflow_dispatch, push]
+jobs:
+  mac:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14        # Apple Silicon (M1/M2/M3/M4)
+            name: PDFSplitter-Mac-AppleSilicon
+          - os: macos-15-intel  # Intel
+            name: PDFSplitter-Mac-Intel
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install flask pikepdf pyinstaller
+      - run: pyinstaller --windowed --name "PDF Splitter" --collect-all pikepdf app.py
+      - run: cd dist && zip -r -y "../${{ matrix.name }}.zip" "PDF Splitter.app"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: ${{ matrix.name }}.zip
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install flask pikepdf pyinstaller
+      - run: pyinstaller --onefile --noconsole --name PDFSplitter --collect-all pikepdf app.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PDFSplitter-Windows
+          path: dist/PDFSplitter.exe
